@@ -1,0 +1,10 @@
+---
+users:
+  - username: qxmips
+    use_sudo: yes
+    
+  - username: syncer
+    use_sudo: yes
+
+  - username: dmbaturin
+    use_sudo: yes    

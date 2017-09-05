@@ -1,0 +1,72 @@
+---
+# tasks file for create-users
+
+  - block:
+     - name: Add users | create users, shell, home dirs
+       user: name={{ item.username }} shell=/bin/bash createhome=yes comment='create with ansible'
+       with_items: '{{users}}'
+
+     - name: Setup | authorized key upload
+       authorized_key: user={{ item.username }}
+         key="{{ lookup('file', 'pub_keys/{{ item.username }}.pub') }}"
+         path='/home/{{ item.username }}/.ssh/authorized_keys'
+         manage_dir=no
+       with_items: '{{users}}'
+
+#  - name: Sudoers | update sudoers file and validate debian
+#    lineinfile: "dest=/etc/sudoers
+#     insertafter=EOF
+#      line='{{ item.username }} ALL=(ALL) NOPASSWD: ALL'
+#      regexp='^{{ item.username }} .*'
+#      state=present"
+#    when: '{{ item.use_sudo }} == True'
+#    with_items: '{{users}}'
+    
+    
+    
+   # for RHEL / centOS     
+  - block:  
+     - name: Make sure we have a 'wheel' group
+       group:
+         name: wheel
+         state: present
+     - debug: msg="OS {{ansible_os_family}}"
+  
+    
+     - name: Allow 'wheel' group to have passwordless sudo
+       lineinfile:
+         dest: /etc/sudoers
+         state: present
+         regexp: '^%wheel'
+         line: '%wheel ALL=(ALL) NOPASSWD: ALL'
+         validate: visudo -cf %s
+      
+     - name: Add sudoers users to wheel group
+       user: name={{ item.username }} groups=wheel append=yes
+       when: '{{ item.use_sudo }} == True'
+       with_items: '{{users}}'
+    when: ansible_os_family == "RedHat"
+ 
+
+# for debian / ubuntu  
+  - block:  
+     - name: Make sure we have a 'wheel' group
+       group:
+         name: sudo
+         state: present
+     - debug: msg="OS falimy is {{ansible_os_family}}"
+  
+   
+     - name: Allow 'sudo' group to have passwordless sudo
+       lineinfile:
+         dest: /etc/sudoers
+         state: present
+         regexp: '^%sudo'
+         line: '%sudo ALL=(ALL) NOPASSWD: ALL'
+         validate: visudo -cf %s
+      
+     - name: Add sudoers users to wheel group
+       user: name={{ item.username }} groups=sudo append=yes
+       when: '{{ item.use_sudo }} == True'
+       with_items: '{{users}}'
+    when: ansible_os_family == "Debian"  

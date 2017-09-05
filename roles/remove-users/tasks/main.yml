@@ -1,0 +1,5 @@
+---
+# tasks file for remove-users
+  - name: Remove users | Remove users with home directories
+    user: name={{ item.username }} state=absent remove=yes
+    with_items: '{{users}}'
